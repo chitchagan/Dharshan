@@ -84,29 +84,19 @@ def main():
         print("RESEND_API_KEY and RESEND_FROM_EMAIL must be configured as GitHub secrets.", file=sys.stderr)
         sys.exit(2)
 
-    email_data = {
-        "from": sender,
-        "to": [TO],
-        "subject": f"Sai Darshan Availability - 25 Dec 2026 - {status}",
-        "html": make_html(status, payload, body, timestamp),
-        "text": report,
-    }
-    request = urllib.request.Request(
-        "https://api.resend.com/emails",
-        data=json.dumps(email_data).encode("utf-8"),
-        headers={
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json",
-            "Accept": "application/json",
-        },
-        method="POST",
-    )
+    import resend
+    resend.api_key = api_key
     try:
-        with urllib.request.urlopen(request, timeout=30) as response:
-            print(f"Resend accepted email: HTTP {response.status}")
-    except urllib.error.HTTPError as exc:
-        error_body = exc.read(2000).decode("utf-8", errors="replace")
-        print(f"Resend rejected email: HTTP {exc.code} - {error_body}", file=sys.stderr)
+        result = resend.Emails.send({
+            "from": sender,
+            "to": [TO],
+            "subject": f"Sai Darshan Availability - 25 Dec 2026 - {status}",
+            "html": make_html(status, payload, body, timestamp),
+            "text": report,
+        })
+        print(f"Resend accepted email request: {result}")
+    except Exception as exc:
+        print(f"Resend email failed: {type(exc).__name__}: {exc}", file=sys.stderr)
         sys.exit(1)
 
 if __name__ == "__main__":
