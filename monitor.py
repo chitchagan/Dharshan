@@ -48,8 +48,8 @@ def main():
     msg["To"] = TO
     msg["Subject"] = f"Sai Darshan API check - {status} - 25 Dec 2026"
     msg.set_content(report)
-    host = os.environ.get("SMTP_HOST", "smtp.gmail.com")
-    port = int(os.environ.get("SMTP_PORT", "465"))
+    host = (os.environ.get("SMTP_HOST") or "smtp.gmail.com")
+    port = int((os.environ.get("SMTP_PORT") or "465"))
     with smtplib.SMTP_SSL(host, port, timeout=30) as smtp:
         smtp.login(sender, password)
         smtp.send_message(msg)
