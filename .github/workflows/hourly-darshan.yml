@@ -18,10 +18,7 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
-      - name: Install Resend SDK
-        run: python -m pip install resend
-      - name: Call POST endpoint and send formatted email via Resend
+      - name: Call POST endpoint and send formatted email via Gmail
         env:
-          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
-          RESEND_FROM_EMAIL: ${{ secrets.RESEND_FROM_EMAIL }}
+          GOOGLE_APP_PASSWORD: ${{ secrets.GOOGLE_APP_PASSWORD }}
         run: python monitor.py
