@@ -18,6 +18,8 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
+      - name: Install Resend SDK
+        run: python -m pip install resend
       - name: Call POST endpoint and send formatted email via Resend
         env:
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
