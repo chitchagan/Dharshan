@@ -1,11 +1,9 @@
 import json
 import os
-import smtplib
 import sys
 import urllib.error
 import urllib.request
 from datetime import datetime, timezone
-from email.message import EmailMessage
 from html import escape
 
 URL = "https://online.sai.org.in/eDarshan/darshanAvailability/2026-12-25/100002"
@@ -80,24 +78,36 @@ def main():
     report = f"Checked (UTC): {timestamp}\nEndpoint: {URL}\nHTTP status: {status}\n\nResponse:\n{pretty}\n"
     print(report)
 
-    sender = os.environ.get("SMTP_USER")
-    password = os.environ.get("SMTP_PASSWORD")
-    if not sender or not password:
-        print("SMTP_USER and SMTP_PASSWORD secrets are missing; email was NOT sent.", file=sys.stderr)
+    api_key = os.environ.get("RESEND_API_KEY")
+    sender = os.environ.get("RESEND_FROM_EMAIL")
+    if not api_key or not sender:
+        print("RESEND_API_KEY and RESEND_FROM_EMAIL must be configured as GitHub secrets.", file=sys.stderr)
         sys.exit(2)
 
-    msg = EmailMessage()
-    msg["From"] = sender
-    msg["To"] = TO
-    msg["Subject"] = f"Sai Darshan API check - {status} - 25 Dec 2026"
-    msg.set_content(report)
-    msg.add_alternative(make_html(status, payload, body, timestamp), subtype="html")
-    host = os.environ.get("SMTP_HOST") or "smtp.gmail.com"
-    port = int(os.environ.get("SMTP_PORT") or "465")
-    with smtplib.SMTP_SSL(host, port, timeout=30) as smtp:
-        smtp.login(sender, password)
-        smtp.send_message(msg)
-    print("Formatted email sent successfully.")
+    email_data = {
+        "from": sender,
+        "to": [TO],
+        "subject": f"Sai Darshan Availability - 25 Dec 2026 - {status}",
+        "html": make_html(status, payload, body, timestamp),
+        "text": report,
+    }
+    request = urllib.request.Request(
+        "https://api.resend.com/emails",
+        data=json.dumps(email_data).encode("utf-8"),
+        headers={
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+        },
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=30) as response:
+            print(f"Resend accepted email: HTTP {response.status}")
+    except urllib.error.HTTPError as exc:
+        error_body = exc.read(2000).decode("utf-8", errors="replace")
+        print(f"Resend rejected email: HTTP {exc.code} - {error_body}", file=sys.stderr)
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()
