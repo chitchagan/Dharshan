@@ -1,21 +1,16 @@
-# Sai Darshan availability API monitor
+# Sai Darshan availability monitor
 
-GitHub Actions calls the configured API with an HTTP POST request once per hour (UTC schedule) and sends the full response to dpjegankumar@gmail.com.
+Runs hourly through GitHub Actions, sends POST to `https://online.sai.org.in/eDarshan/darshanAvailability/2026-12-25/100002`, and emails an HTML table with **all** returned slots and extra API fields to `dpjegankumar@gmail.com`. The full JSON response is included below the table.
 
-## Setup required
+## One-time Resend setup
 
-In **Settings → Secrets and variables → Actions**, add repository secrets:
-- `SMTP_USER`: your sending Gmail address
-- `SMTP_PASSWORD`: a Gmail app password (not your normal Gmail password)
+1. Sign up at https://resend.com and create a sending API key.
+2. Verify a sending domain in Resend, or use Resend's test sender only when the recipient is your Resend account email (testing restrictions apply).
+3. Add these repository secrets at **Settings → Secrets and variables → Actions**:
+   - `RESEND_API_KEY` — your private Resend API key
+   - `RESEND_FROM_EMAIL` — sender address authorized by Resend (for example `Alerts <alerts@your-verified-domain.com>`)
+4. Open **Actions → Hourly Sai Darshan API check → Run workflow** to test.
 
-Optional repository variables: `SMTP_HOST` (defaults to smtp.gmail.com) and `SMTP_PORT` (defaults to 465). Leave both unset to use the defaults.
+**Never put an API key in code, an issue, or a chat message.**
 
-In **Actions → Hourly Sai Darshan API check → Run workflow**, test it. No email can be sent until SMTP credentials are configured.
-
-## Notes
-
-- Sends an email on **every hourly check**, including API errors. It does not yet compare responses across runs.
-- GitHub scheduled jobs may be delayed or occasionally skipped; not a guaranteed exact-time service.
-- API body is currently `{}` with Content-Type application/json; adjust if the endpoint requires another body or browser session.
-- This is a monitoring aid, not a booking confirmation.
-- Do not commit credentials to the repository.
+Notes: Emails on **every** run, not only when values change. GitHub cron can run late or skip runs. An API slot listing is not necessarily proof of available tickets. The POST body is `{}`, and may need changing if the site expects something else. The first live execution and email delivery remain unverified.
