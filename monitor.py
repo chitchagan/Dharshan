@@ -1,10 +1,12 @@
 import json
 import os
+import smtplib
 import sys
 import urllib.error
 import urllib.request
 from datetime import datetime, timezone
 from html import escape
+from email.message import EmailMessage
 
 URL = "https://online.sai.org.in/eDarshan/darshanAvailability/2026-12-25/100002"
 TO = "dpjegankumar@gmail.com"
@@ -78,25 +80,25 @@ def main():
     report = f"Checked (UTC): {timestamp}\nEndpoint: {URL}\nHTTP status: {status}\n\nResponse:\n{pretty}\n"
     print(report)
 
-    api_key = os.environ.get("RESEND_API_KEY")
-    sender = os.environ.get("RESEND_FROM_EMAIL")
-    if not api_key or not sender:
-        print("RESEND_API_KEY and RESEND_FROM_EMAIL must be configured as GitHub secrets.", file=sys.stderr)
+    app_password = os.environ.get("GOOGLE_APP_PASSWORD")
+    sender = "stanskillacademy@gmail.com"
+    if not app_password:
+        print("GOOGLE_APP_PASSWORD GitHub secret is missing.", file=sys.stderr)
         sys.exit(2)
 
-    import resend
-    resend.api_key = api_key
+    msg = EmailMessage()
+    msg["From"] = sender
+    msg["To"] = TO
+    msg["Subject"] = f"Sai Darshan Availability - 25 Dec 2026 - {status}"
+    msg.set_content(report)
+    msg.add_alternative(make_html(status, payload, body, timestamp), subtype="html")
     try:
-        result = resend.Emails.send({
-            "from": sender,
-            "to": [TO],
-            "subject": f"Sai Darshan Availability - 25 Dec 2026 - {status}",
-            "html": make_html(status, payload, body, timestamp),
-            "text": report,
-        })
-        print(f"Resend accepted email request: {result}")
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=30) as smtp:
+            smtp.login(sender, app_password)
+            smtp.send_message(msg)
+        print("Gmail SMTP accepted the formatted email.")
     except Exception as exc:
-        print(f"Resend email failed: {type(exc).__name__}: {exc}", file=sys.stderr)
+        print(f"Gmail delivery failed: {type(exc).__name__}: {exc}", file=sys.stderr)
         sys.exit(1)
 
 if __name__ == "__main__":
